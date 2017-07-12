@@ -1,0 +1,19 @@
+{
+  "name": "shape2geo2topo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "shape2geo": "shp2json --encoding shift_jis ./datas/source/*.shp > ./datas/source/output.geojson && node ./scripts/shape2geo.js",
+    "geo2topo": "sh ./scripts/geo2topo.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "JSONStream": "1.3.1",
+    "event-stream": "3.3.4",
+    "shapefile": "0.6.2",
+    "topojson": "3.0.0"
+  }
+}
