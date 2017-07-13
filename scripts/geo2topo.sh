@@ -6,6 +6,11 @@ do
     pref=${arr[3]}
     dir="topojson/"$pref
 
+    if [ ! -d ./datas/topojson/$pref ]
+    then
+        mkdir ./datas/topojson/$pref
+    fi
+
     basename=$(basename $file)
     if [ $basename = '.DS_Store' -o ! ${basename##*.} = 'geojson' ]; then
       continue
