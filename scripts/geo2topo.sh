@@ -21,3 +21,4 @@ do
     geo2topo -q 1e6 ./datas/geojson/$pref/$name.geojson > ./datas/topojson/$pref/$name.topojson
 
 done
+echo "Convert geojson to topojson is complete."

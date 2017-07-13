@@ -2,36 +2,32 @@ const fs = require('fs');
 const JSONStream = require('JSONStream');
 const es = require('event-stream');
 
-let prevPrefCode = null;
-let prevAddrCode = null;
-let prevFeatures = [];
+let prefCode = null;  // 都道府県コード(2桁)
+let addrCode = null;  // 市区町村コード(5桁)
+let features = [];    // 市区町村毎の形状データ
 
-// MEMO ファイルが500MB越えのためstreamで順次処理をします。
+// 全国の場合ファイルサイズが500MBを越えるのためstreamで順次処理をする
 fs.createReadStream('./datas/source/output.geojson')
   .pipe(JSONStream.parse('features.*'))
   .pipe(es.mapSync((feature) => {
-    // 住所コード不定のものは対象外とします。
-    if (feature.properties.N03_007) {
-      const prefCode = getPrefectureCode(feature);
-      // ディレクトリ作成
-      if (!fs.existsSync(`./datas/geojson/${prefCode}`)) {
-        fs.mkdirSync(`./datas/geojson/${prefCode}`);
-      }
-      const addrCode = getAddressCode(feature);
-      const names = getAddressNames(feature);
-      const name = names[2] ? names[1] + names[2] : names[1];
-      if (prevAddrCode && addrCode !== prevAddrCode) {
-        writeFile();
-        prevFeatures = []; // 初期化
-      }
-      prevPrefCode = prefCode;
-      prevAddrCode = addrCode;
-      prevFeatures.push(feature);
+    if (!feature.properties.N03_007) return;  // 住所コード不定のものは対象外とする
+    const pc = getPrefectureCode(feature);
+    const ac = getAddressCode(feature);
+    const names = getAddressNames(feature);
+    const name = names[2] ? names[1] + names[2] : names[1];
+    makePrefDir(pc);
+    if (addrCode && addrCode !== ac) {
+      writeCityFile();
+      features = []; // 初期化
     }
+    prefCode = pc;
+    addrCode = ac;
+    feature.properties = {}; // ファイルサイズ軽量化のため空にする
+    features.push(feature);
   }))
   .on('end', () => {
-    writeFile();
-    console.log('shape to geojson complete.');
+    writeCityFile();
+    console.log('Convert shape to geojson is complete.');
   });
 
 /**
@@ -74,10 +70,15 @@ function getAddressNames(feature) {
   return names;
 }
 
-function writeFile() {
+function makePrefDir(prefCode) {
+  if (fs.existsSync(`./datas/geojson/${prefCode}`)) return;
+  fs.mkdirSync(`./datas/geojson/${prefCode}`);
+}
+
+function writeCityFile() {
   const json = {
     'type': 'FeatureCollection',
-    'features': prevFeatures
+    'features': features
   };
-  fs.writeFileSync(`./datas/geojson/${prevPrefCode}/${prevAddrCode}.geojson`, JSON.stringify(json));
+  fs.writeFileSync(`./datas/geojson/${prefCode}/${addrCode}.geojson`, JSON.stringify(json));
 }
